@@ -1,9 +1,13 @@
 Package: tags
-Title: What the Package Does (one line, title case)
+Title: A collection of tags built using the package 'tag'
 Version: 0.0.0.9000
 Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-Depends: R (>= 3.5.0)
+Description: A collection of tags built using the package 'tag'.
+    Tags are essentially adverb factories, they build adverbs (also called function operators) from a set of parameters.
+	Aditionally they benefit from a special syntax using the '$' operator.
+Depends: 
+    R (>= 3.5.0),
+    tag
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

@@ -3,367 +3,452 @@
 tags
 ====
 
-tags are single argument functions which are always named with the prefix `..` and can be called using `$` so that `..tag$obj` is equivalent to `..tag(obj)`.
+This package consists of a collection of tags built using the functions and principle designed and described in the package *tag*. See the read me at : <https://github.com/moodymudskipper/tag>.
 
-They're often used to alter a function (in this case they are adverbs), but can be used on other object types.
+It is still largely in progress and subject to important changes such as addition /removal/ renaming of functions and arguments etc.
 
-For now it's more a collection of experiment rather than a cohesive package.
+We showcase hereby the tags from the package.
 
-See bottom for some reflexions
-
-used as an adverb
------------------
-
-`..bang` will make any function compatible with quasiquotation
+Installation and setup :
 
 ``` r
-library(rlang)
-#> Warning: package 'rlang' was built under R version 3.5.3
+# devtools::install_github("moodymudskipper/tag")
+# devtools::install_github("moodymudskipper/tags")
+library(tags)
+library(tidyverse,warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
+#> Registered S3 methods overwritten by 'ggplot2':
+#>   method         from 
+#>   [.quosures     rlang
+#>   c.quosures     rlang
+#>   print.quosures rlang
+#> Registered S3 method overwritten by 'rvest':
+#>   method            from
+#>   read_xml.response xml2
+#> -- Attaching packages --------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+#> v ggplot2 3.1.1       v purrr   0.3.2  
+#> v tibble  2.1.1       v dplyr   0.8.0.1
+#> v tidyr   0.8.3       v stringr 1.4.0  
+#> v readr   1.3.1       v forcats 0.4.0
+#> -- Conflicts ------------------------------------------------------------------------------------------------ tidyverse_conflicts() --
+#> x dplyr::filter() masks stats::filter()
+#> x dplyr::lag()    masks stats::lag()
+library(progress)
+```
+
+### Basic tags
+
+#### `strictly` tag to adjust strictness of a call
+
+``` r
+strictly(-1)$sqrt(-1)
+#> [1] NaN
+```
+
+#### `dbg` tag to debug a call
+
+Will run `debugonce` on the input function.
+
+``` r
+dbg$sample(5)
+```
+
+#### `logging` tag to log call and time it took
+
+``` r
+logging$head(cars,2)
+#> logging$head(x = cars, 2)
+#>   ~ ... 0 sec
+#>   speed dist
+#> 1     4    2
+#> 2     4   10
+```
+
+#### `trying` tag to try a call or if failure call alternate call
+
+``` r
+trying$paste("hello","world", .else = "hi")
+#> [1] "hello world"
+trying$paste("hello", world, .else = "hi")
+#> Error in (function (..., sep = " ", collapse = NULL)  : 
+#>   object 'world' not found
+#> [1] "hi"
+trying$paste("hello", world, .else = "hi", .silent = TRUE)
+#> [1] "hi"
+```
+
+#### `preserving_attr` tag to preserve attributes
+
+``` r
+preserving_attr$map_dfr(head(iris,2),identity)
+#> # A tibble: 2 x 5
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> *        <dbl>       <dbl>        <dbl>       <dbl> <fct>  
+#> 1          5.1         3.5          1.4         0.2 setosa 
+#> 2          4.9         3            1.4         0.2 setosa
+preserving_attr(incl_class = TRUE)$map_dfr(head(iris,2),identity)
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         0.2  setosa
+#> 2          4.9         3.0          1.4         0.2  setosa
+```
+
+### Tidy tags
+
+#### `bng` tag to enable tidy evaluation or arguments
+
+``` r
 u <- "speed"
 v <- quote(dist)
-w <- quo(time)
+w <- rlang::quo(time)
 x <- list(a=c(1, 2), b=c(3, 4))
-..bang$transform(head(cars,2), !!w := !!v / !!sym(u), !!!x)
+bng$transform(head(cars,2), !!w := !!v / !!rlang::sym(u), !!!x)
 #>   speed dist time a b
 #> 1     4    2  0.5 1 3
 #> 2     4   10  2.5 2 4
 ```
 
-------------------------------------------------------------------------
-
-`..grp` uses `dplyr::group_by` for a single operation, it adds a `.by` argument to the function
+#### `lbd` tag to use formula notation on FUN arguments
 
 ``` r
-library(dplyr, warn.conflicts = FALSE)
-#> Warning: package 'dplyr' was built under R version 3.5.3
-..grp$summarize_all(iris,mean, .by="Species")
+lbd$ave(c(1,2,4,3,NA),c(1,1,2,2,2),FUN = ~mean(.,na.rm=TRUE))
+#> [1] 1.5 1.5 3.5 3.5 3.5
+```
+
+#### `on_self` tag to allow self referencing in arguments
+
+``` r
+on_self$transform(head(iris,2), Petal.Width = ~1000*(.), Species = ~toupper(.))
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         200  SETOSA
+#> 2          4.9         3.0          1.4         200  SETOSA
+on_self$summarize(iris, Petal.Width = ~median(.), Sepal.Length = ~mean(.))
+#>   Petal.Width Sepal.Length
+#> 1         1.3     5.843333
+```
+
+#### `grp` tag to group and ungroup around another operation
+
+``` r
+tbl_at_syms <- tags:::tbl_at_syms
+grp$summarize(iris,meanSL = mean(Sepal.Length), .by="Species")
+#> # A tibble: 3 x 2
+#>   Species    meanSL
+#>   <fct>       <dbl>
+#> 1 setosa       5.01
+#> 2 versicolor   5.94
+#> 3 virginica    6.59
+grp(.by="Species")$summarize(iris,meanSL = mean(Sepal.Length))
+#> # A tibble: 3 x 2
+#>   Species    meanSL
+#>   <fct>       <dbl>
+#> 1 setosa       5.01
+#> 2 versicolor   5.94
+#> 3 virginica    6.59
+grp$summarize_all(iris, mean, .by="Species")
 #> # A tibble: 3 x 5
 #>   Species    Sepal.Length Sepal.Width Petal.Length Petal.Width
 #>   <fct>             <dbl>       <dbl>        <dbl>       <dbl>
 #> 1 setosa             5.01        3.43         1.46       0.246
 #> 2 versicolor         5.94        2.77         4.26       1.33 
 #> 3 virginica          6.59        2.97         5.55       2.03
+grp$slice(iris,1, .by="Species")
+#> # A tibble: 3 x 5
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species   
+#>          <dbl>       <dbl>        <dbl>       <dbl> <fct>     
+#> 1          5.1         3.5          1.4         0.2 setosa    
+#> 2          7           3.2          4.7         1.4 versicolor
+#> 3          6.3         3.3          6           2.5 virginica
+# unnamed groupings are not kept
+grp$summarize(
+  iris,meanSW = mean(Sepal.Width), .by= vars(Species, Sepal.Width > 3.2))
+#> # A tibble: 6 x 2
+#>   Species    meanSW
+#>   <fct>       <dbl>
+#> 1 setosa       3.04
+#> 2 setosa       3.63
+#> 3 versicolor   2.75
+#> 4 versicolor   3.35
+#> 5 virginica    2.88
+#> 6 virginica    3.49
+# named groupings are kept
+grp$summarize(
+  iris,meanSW = mean(Sepal.Width), .by= vars(Species, long_sepal = Sepal.Width > 3.2))
+#> # A tibble: 6 x 3
+#>   Species    long_sepal meanSW
+#>   <fct>      <lgl>       <dbl>
+#> 1 setosa     FALSE        3.04
+#> 2 setosa     TRUE         3.63
+#> 3 versicolor FALSE        2.75
+#> 4 versicolor TRUE         3.35
+#> 5 virginica  FALSE        2.88
+#> 6 virginica  TRUE         3.49
 ```
 
-------------------------------------------------------------------------
-
-`..lbd` detects formula arguments allows self referencing in functions such as `transform`, `dplyr::mutate` and `dplyr::summarize`
+#### `rw` tag to apply a transformation rowwise
 
 ``` r
-..lbd$mutate(head(iris,2), Petal.Width = ~1000*(.), Species = ~toupper(.))
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-#> 1          5.1         3.5          1.4         200  SETOSA
-#> 2          4.9         3.0          1.4         200  SETOSA
+rw$mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
+#> # A tibble: 3 x 6
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species     X
+#>          <dbl>       <dbl>        <dbl>       <dbl> <fct>   <dbl>
+#> 1          5.1         3.5          1.4         0.2 setosa   4.3 
+#> 2          4.9         3            1.4         0.2 setosa   3.95
+#> 3          4.7         3.2          1.3         0.2 setosa   3.95
+mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species        X
+#> 1          5.1         3.5          1.4         0.2  setosa 4.066667
+#> 2          4.9         3.0          1.4         0.2  setosa 4.066667
+#> 3          4.7         3.2          1.3         0.2  setosa 4.066667
 ```
 
-------------------------------------------------------------------------
-
-`..at` makes `dplyr::mutate` and `dplyr::summarize` compatible with the use of `at` to enjoy features of `mutate_at` and `summarize_at` in the same call. Through the `.key` argument `summarize` also supports multi spread in an intuitive way. `at(...)` is actually a shortcut for `!!!.at(FIRST_ARG, ...)` (where `FIRST_ARG` will just be `.` in a pipe chain), which can be called without the tag `..at`
-
-``` r
-..at$summarize(iris, at(vars(starts_with("Sepal")),lst(mean,median)))
-#>   Sepal.Length_mean Sepal.Width_mean Sepal.Length_median
-#> 1          5.843333         3.057333                 5.8
-#>   Sepal.Width_median
-#> 1                  3
-iris %>% summarize(!!!.at(.,vars(starts_with("Sepal")),lst(mean,median)))
-#>   Sepal.Length_mean Sepal.Width_mean Sepal.Length_median
-#> 1          5.843333         3.057333                 5.8
-#>   Sepal.Width_median
-#> 1                  3
-mtcars %>%
-  group_by(gear) %>%
-  ..at$summarize(at(c("disp","hp"), mean, .keys = vars(cyl)))
-#> # A tibble: 3 x 7
-#>    gear disp_cyl_6_mean disp_cyl_4_mean disp_cyl_8_mean hp_cyl_6_mean
-#>   <dbl>           <dbl>           <dbl>           <dbl>         <dbl>
-#> 1     3            242.            120.            358.          108.
-#> 2     4            164.            103.            NaN           116.
-#> 3     5            145             108.            326           175 
-#> # ... with 2 more variables: hp_cyl_4_mean <dbl>, hp_cyl_8_mean <dbl>
-```
-
-------------------------------------------------------------------------
-
-`..ip` modifies a function so it assigns in place to its first argument :
+*purrr* adverbs counterparts
+----------------------------
 
 ``` r
-x <- "a"
-..ip$toupper(x)
-x
-#> [1] "A"
-```
-
-------------------------------------------------------------------------
-
-`..View` will open the viewer on the output, handy to debug, or in pipe chains, see also `%View>%` in my package *pipes*
-
-``` r
-..View$head(iris)
-```
-
-------------------------------------------------------------------------
-
-`..nowarn` will suppress the warnings, a parameter `warn = -1` can be changed along the rules from `?options` . See also `%nowarn>%` in my package *pipes*.
-
-``` r
-..nowarn$sqrt(-1)
-#> [1] NaN
-```
-
-------------------------------------------------------------------------
-
-`..strict` will turn any warning into an error, a parameter `warn = -1` can be changed along the rules from `?options` . See also `%strict>%` in my package *pipes*.
-
-``` r
-..strict$sqrt(-1)
-#> Error in sqrt(x = -1): (converted from warning) NaNs produced
-```
-
-------------------------------------------------------------------------
-
-`..try` will add an argument `.else` which will be evaluated if normal call fails.
-
-``` r
-..try$paste("hello","world", .else = "hi")
-#> [1] "hello world"
-..try$paste("hello", world, .else = "hi")
-#> Error in paste("hello", world) : object 'world' not found
-#> [1] "hi"
-..try$paste("hello", world, .else = "hi", .silent = TRUE)
-#> [1] "hi"
-```
-
-------------------------------------------------------------------------
-
-`..debug` runs `debugonce` on the tagged function
-
-``` r
-..debug$ave(1:4, rep(1:2,each =2))
-#> debugging in: ave(x = 1:4, rep(1:2, each = 2))
-#> debug: {
-#>     if (missing(...)) 
-#>         x[] <- FUN(x)
-#>     else {
-#>         g <- interaction(...)
-#>         split(x, g) <- lapply(split(x, g), FUN)
-#>     }
-#>     x
-#> }
-#> debug: if (missing(...)) x[] <- FUN(x) else {
-#>     g <- interaction(...)
-#>     split(x, g) <- lapply(split(x, g), FUN)
-#> }
-#> debug: g <- interaction(...)
-#> debug: split(x, g) <- lapply(split(x, g), FUN)
-#> debug: x
-#> exiting from: ave(x = 1:4, rep(1:2, each = 2))
-#> [1] 1.5 1.5 3.5 3.5
-```
-
-special tags
-------------
-
-`..w` (like "with") is a tag that can be used for subsetting with `[`, allowing self referencing with `.`, named elements can be accessed by their names like in `with`, except that `with` doesn't support atomic vectors. `[[` doesn't subset but returns the value of the content of the brackets
-
-``` r
-..w$iris[nrow(.),]
-#>     Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
-#> 150          5.9           3          5.1         1.8 virginica
-vec1 <- c(a=1,b=2,c=3,d=4)
-..w$vec1[.>b]
-#> c d 
-#> 3 4
-vec2 <- 1:20
-..w$vec2[.>10]
-#>  [1] 11 12 13 14 15 16 17 18 19 20
-..w$iris[[nrow(.)]]
-#> [1] 150
-vec1 <- c(a=1,b=2,c=3,d=4)
-..w$vec1[[b+c]]
-#> [1] 5
-vec2 <- 1:20
-..w$vec2[[length(.)/2]]
-#> [1] 10
-```
-
-`..fn` changes arguments named `FUN` from formula to function using `purrr::as_mapper`, (in base R all function arguments are named `FUN`). It is named as a tribute to Gabor Grothendieck's `gsubfn::fn`, which works in a similar way.
-
-``` r
-..fn$sapply(iris, ~class(.))
-#> Sepal.Length  Sepal.Width Petal.Length  Petal.Width      Species 
-#>    "numeric"    "numeric"    "numeric"    "numeric"     "factor"
-```
-
-`..p` initiates a dollar pipe chain
-
-``` r
-..p$iris$head$Filter(is.numeric,.)$dim()
-#> [1] 6 4
-```
-
-`..fs` initiates a dollar pipe unabled functional sequence (it's technically an adverb but too weird to be included above)
-
-``` r
-fun <- ..fs$head(2)$gsub("h","X",.)
-fun(c("hello","hi","foo"))
-#> [1] "Xello" "Xi"
-```
-
-`..dt` allows using *data.table* syntax and performance for a single operation without cumbersome conversions
-
-``` r
-iris2 <- head(iris,2)
-..dt$iris2[,Species2:=toupper(Species)]
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species Species2
-#> 1          5.1         3.5          1.4         0.2  setosa   SETOSA
-#> 2          4.9         3.0          1.4         0.2  setosa   SETOSA
-```
-
-experiments
------------
-
-Those tags are not extremely useful, but were implemented when playing around with the concept of tag, and might serve as inspiration.
-
-`..incr` is used to increment values
-
-``` r
-x <- 3
-+..incr$x
-#> [1] 4
-..incr$x + 5
-#> [1] 9
--..incr$x
-#> [1] 8
-..incr$x - 2
-#> [1] 6
-```
-
-`..chr` allows arithmetic operations on strings, `+` and `-` paste in different order, `*` duplicates the strings and `/` subsets with a regex
-
-``` r
-x <- "hello"
-..chr$x + "world"
-#> [1] "helloworld"
-..chr$x + "world" - "oh"
-#> [1] "ohhelloworld"
-..chr$x + "world" - "oh" + toupper + unclass
-#> [1] "OHHELLOWORLD"
-..chr$x * 3
-#> [1] "hellohellohello"
-x <- c("hello","sup", "hey","mornin")
-..chr$x / "^h"
-#> [1] "hello" "hey"
-```
-
-creating an adverb tag
-======================
-
-To create a custom adverb tag we just need to design an adverb and give it the appropriate class. The class `"tag"` is used for the `$.tag` method, the class `"adverb"` is used for composition.
-
-``` r
-..neg <- Negate
-class(..neg) <- c("tag","adverb","function")
-..neg$is.numeric("a")
-#> [1] TRUE
-..up <- function(f) function(...) toupper(f(...))
-class(..up) <- c("tag","adverb","function")
-..up$substr("hello world",1,5)
-#> [1] "HELLO"
-```
-
-reflexions
-==========
-
-All exported functions from the package *tags* use the `$.tag` method.
-
-Tag functions could have been just `NA` objects with a method for `$`, this is the approach taken by Gabor Grothendieck for `gsubfn::fn`. I think however that it's clearer to think of them as functions with a `$` shorthand thanks to their class `"tag"`.
-
-------------------------------------------------------------------------
-
-Usually adverbs don't add argument to a function, instead arguments are passed to the adverb (so they can be documented traditionally) and arguments are left untouched or some are removed (e.g. `purrr::partial`). i.e. We find a lot of `adv(fun, adv_arg)(fun_arg)` but never `adv(fun)(fun_arg, new_arg)` as is done in this package. The latter is less easy to document, but easier to read and makes tags possible.
-
-------------------------------------------------------------------------
-
-Adverb tags are the most likely to be expanded, maybe other tags should have a different prefix (or none ?), so we can have more consistency.
-
-Traditional adverbs suffer from :
-
--   naming conventions (verb? adjective? adverb?): `purrr::compose`, `purrr::partial`, `purrr::safely`, `Negate`
--   naming inconsistencies: `rate_delay` is an adverb, `rate_backoff` isn't
--   brackets and parameters are awkward for inline use as parameters end up between the adverb and the input function
--   the adverb is highlighted by the editor, the function is not
-
-``` r
-library(purrr)
-#> Warning: package 'purrr' was built under R version 3.5.3
-#> 
-#> Attaching package: 'purrr'
-#> The following objects are masked from 'package:rlang':
-#> 
-#>     %@%, as_function, flatten, flatten_chr, flatten_dbl,
-#>     flatten_int, flatten_lgl, flatten_raw, invoke, list_along,
-#>     modify, prepend, splice
-safely(log, otherwise = NA_real_)(10)
+safely2$log(10, otherwise = NA_real_)
 #> $result
 #> [1] 2.302585
 #> 
 #> $error
 #> NULL
-safely(log, otherwise = NA_real_)("a")
+safely2$log("a", otherwise = NA_real_)
 #> $result
 #> [1] NA
 #> 
 #> $error
-#> <simpleError in .Primitive("log")(x, base): non-numeric argument to mathematical function>
-safely(log, otherwise = NA_real_)("a")$result
-#> [1] NA
-# not the same thing but as a comparison
-..try$log(10, .else = NA_real_)
+#> <simpleError in .Primitive("log")(x = "a"): non-numeric argument to mathematical function>
+safely2(otherwise = NA_real_)$log(10)
+#> $result
 #> [1] 2.302585
-..try$log("a", .else = NA_real_)
-#> Error in log(x = "a") : non-numeric argument to mathematical function
+#> 
+#> $error
+#> NULL
+safely2(otherwise = NA_real_)$log("a")
+#> $result
 #> [1] NA
-..try$log("a", .else = NA_real_, .silent = TRUE)
-#> [1] NA
+#> 
+#> $error
+#> <simpleError in .Primitive("log")(x = "a"): non-numeric argument to mathematical function>
 ```
-
-This package offers an opportunity for consistency, though it's spoiled by the presence of non adverb tags, which might be better off with a different prefix (or none) so all tags would be adverbs. Non adverb tags are `..dt`, `..w`, `..pp` and `..fs` (the latter being technically an adverb).
-
-Adverbs might be underused because their use is not intuitive, maybe tags can help in this regard.
-
-------------------------------------------------------------------------
-
-Thanks to the fact they're functions, we can compose them when they are adverbs (another reason to dissociate non adverbs):
 
 ``` r
-# same output:
-..View(..grp$summarize_all)(iris, mean, .by = "Species")
-#> # A tibble: 3 x 5
-#>   Species    Sepal.Length Sepal.Width Petal.Length Petal.Width
-#>   <fct>             <dbl>       <dbl>        <dbl>       <dbl>
-#> 1 setosa             5.01        3.43         1.46       0.246
-#> 2 versicolor         5.94        2.77         4.26       1.33 
-#> 3 virginica          6.59        2.97         5.55       2.03
-..grp(..View$summarize_all)(iris, mean, .by = "Species")
-#> # A tibble: 3 x 5
-#>   Species    Sepal.Length Sepal.Width Petal.Length Petal.Width
-#>   <fct>             <dbl>       <dbl>        <dbl>       <dbl>
-#> 1 setosa             5.01        3.43         1.46       0.246
-#> 2 versicolor         5.94        2.77         4.26       1.33 
-#> 3 virginica          6.59        2.97         5.55       2.03
+quietly2$sqrt(-1)
+#> $result
+#> [1] NaN
+#> 
+#> $output
+#> [1] ""
+#> 
+#> $warnings
+#> [1] "NaNs produced"
+#> 
+#> $messages
+#> character(0)
+quietly2$sqrt(4)
+#> $result
+#> [1] 2
+#> 
+#> $output
+#> [1] ""
+#> 
+#> $warnings
+#> character(0)
+#> 
+#> $messages
+#> character(0)
 ```
 
-Though chaining with `..View$..grp$(...)` is possible to implement.
+``` r
+possibly2$log("a", otherwise = NA_real_)
+#> [1] NA
+possibly2$log(10, otherwise = NA_real_)
+#> [1] 2.302585
+```
 
-------------------------------------------------------------------------
+functional sequences
+--------------------
 
-Maybe names starting with ".", are an issue, I haven't thought it through, maybe something like `T.tag$obj` but it doesn't looks as good, and less like a tag.
+This tag is not yet coded consistently to the other tags.
 
-------------------------------------------------------------------------
+``` r
+fs(head)$dim()(iris)
+#> [1] 6 5
+fs$head(2)$gsub("h","X",.)(c("hello","hi","foo"))
+#> [1] "Xello" "Xi"
+```
 
-Short names have been preferred to put focus on input function, not sure if it's smart if the family grows
+dot operations
+--------------
 
-------------------------------------------------------------------------
+`selecting_dots`, `renaming_dots`, `mutating_dots`, and `transmuting_dots` are wrappers around *dplyr* functions.
 
-Through some miracle that I don't understand, RStudio's completion suggestions works on tagged functions (including added parameters).
+`reversing_dots` flips the arguments fed to the `...`.
+
+``` r
+# the functions can be used in regular cal
+reversing_dots$paste0("a", "b")
+#> [1] "ba"
+selecting_dots(vars(b2,starts_with("a")))$
+  transform(head(cars,2), a1 = 1, b1 = 2, a2 = 3, b2 = speed *100)
+#>   speed dist  b2 a1 a2
+#> 1     4    2 400  1  3
+#> 2     4   10 400  1  3
+mutating_dots(exprs(foo = 1000 * bar))$
+  mutate(head(cars,2), bar = speed * 10)
+#>   speed dist bar   foo
+#> 1     4    2  40 40000
+#> 2     4   10  40 40000
+# or with forwarded dots
+fun <- function(...){
+  print(
+    selecting_dots(vars(b2,starts_with("a")))$
+      mutate(head(cars,2), ...))
+  print(
+    renaming_dots(vars(foo = a1))$
+      mutate(head(cars,2), ...))
+  print(
+    mutating_dots(exprs(a2 = 100*a2 + a1, foo = 1000 * b1))$
+      mutate(head(cars,2), ...))
+  print(
+    transmuting_dots(exprs(a2 = 100*a2 + a1, foo = 1000 * b1))$
+      mutate(head(cars,2), ...))
+  print(
+    reversing_dots$mutate(head(cars,2), ...))
+}
+fun(a1 = 1, b1 = 2, a2 = 3, b2 = 40)
+#>   speed dist b2 a1 a2
+#> 1     4    2 40  1  3
+#> 2     4   10 40  1  3
+#>   speed dist foo b1 a2 b2
+#> 1     4    2   1  2  3 40
+#> 2     4   10   1  2  3 40
+#>   speed dist a1 b1  a2 b2  foo
+#> 1     4    2  1  2 301 40 2000
+#> 2     4   10  1  2 301 40 2000
+#>   speed dist  a2  foo
+#> 1     4    2 301 2000
+#> 2     4   10 301 2000
+#>   speed dist b2 a2 b1 a1
+#> 1     4    2 40  3  2  1
+#> 2     4   10 40  3  2  1
+```
+
+formal operations
+-----------------
+
+**Work in progress**
+
+`selecting_args`, `renaming_args`, `mutating_args`, and `transmuting_args` will change the formals of the functions.
+
+They cannot be coded using the `tag` function only.
+
+using a progress bar
+--------------------
+
+Detects the functional and displays a progress bar, using all the available options from package *progress*.
+
+``` r
+with_pb$map(1:5, ~{Sys.sleep(1);.x*2})
+#> [[1]]
+#> [1] 2
+#> 
+#> [[2]]
+#> [1] 4
+#> 
+#> [[3]]
+#> [1] 6
+#> 
+#> [[4]]
+#> [1] 8
+#> 
+#> [[5]]
+#> [1] 10
+with_pb$lapply(1:5, function(x) {Sys.sleep(1);x*2})
+#> [[1]]
+#> [1] 2
+#> 
+#> [[2]]
+#> [1] 4
+#> 
+#> [[3]]
+#> [1] 6
+#> 
+#> [[4]]
+#> [1] 8
+#> 
+#> [[5]]
+#> [1] 10
+```
+
+tracing and enclosing
+---------------------
+
+`tracing` is modelled after `base::trace` and edits the body of its input function while `enclosing` wraps the input function call inside a call to function `.around`, between statements `.before` and `.after`.
+
+``` r
+tracing(quote(print("hello")), exit = quote(print("good bye")))$mean(1:5)
+#> [1] "hello"
+#> [1] "good bye"
+#> [1] 3
+enclosing(.before = print("hello"),
+          .after = print(paste("result was:", .)),
+          .around = suppressWarnings)$sqrt(-1)
+#> [1] "hello"
+#> [1] "result was: NaN"
+#> [1] NaN
+```
+
+`in_parallel` tag to execute a call in another session
+------------------------------------------------------
+
+When using this tag the function and its arguments are evaluated and saved so the call can be executed in another session, it allows things like displaying time elapsed or % of esimated time, or setting a timeout.
+
+**work in progress** (but already works with limited features)
+
+``` r
+u <- cars
+v <- 3
+fun <- function(y,m){
+  Sys.sleep(5)
+  head(y, m)
+}
+x <- in_parralel(.wait=FALSE)$fun(u,v)
+#> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
+x
+#> NULL
+y <- in_parralel$fun(u,v)
+#> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
+#>   ~ 1.02 secs             ~ 2.04 secs             ~ 3.04 secs             ~ 4.05 secs             ~ 5.07 secs             ~ 6.08 secs
+y
+#>   speed dist
+#> 1     4    2
+#> 2     4   10
+#> 3     7    4
+```
+
+`using` tag to evaluate call in a given environment
+---------------------------------------------------
+
+``` r
+using(iris)$ave(Sepal.Length,Species, FUN = mean)
+#>   [1] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
+#>  [12] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
+#>  [23] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
+#>  [34] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
+#>  [45] 5.006 5.006 5.006 5.006 5.006 5.006 5.936 5.936 5.936 5.936 5.936
+#>  [56] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
+#>  [67] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
+#>  [78] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
+#>  [89] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
+#> [100] 5.936 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
+#> [111] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
+#> [122] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
+#> [133] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
+#> [144] 6.588 6.588 6.588 6.588 6.588 6.588 6.588
+vec <- c(1:2,a=2.5,3:4)
+using(vec)[.>=a] # rather than ; vec[vec >= vec["a"]]
+#>   a         
+#> 2.5 3.0 4.0
+using(vec)[[.>=a]] # rather than ; vec >= vec["a"]
+#>                 a             
+#> FALSE FALSE  TRUE  TRUE  TRUE
+```
