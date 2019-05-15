@@ -30,7 +30,7 @@ Installation and setup :
 # devtools::install_github("moodymudskipper/tag")
 # devtools::install_github("moodymudskipper/tags")
 library(tags)
-library(tidyverse,warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
+suppressPackageStartupMessages(library(tidyverse,warn.conflicts = FALSE))
 library(progress)
 ```
 

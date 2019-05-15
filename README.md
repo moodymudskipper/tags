@@ -15,23 +15,7 @@ Installation and setup :
 # devtools::install_github("moodymudskipper/tag")
 # devtools::install_github("moodymudskipper/tags")
 library(tags)
-library(tidyverse,warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
-#> Registered S3 methods overwritten by 'ggplot2':
-#>   method         from 
-#>   [.quosures     rlang
-#>   c.quosures     rlang
-#>   print.quosures rlang
-#> Registered S3 method overwritten by 'rvest':
-#>   method            from
-#>   read_xml.response xml2
-#> -- Attaching packages --------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
-#> v ggplot2 3.1.1       v purrr   0.3.2  
-#> v tibble  2.1.1       v dplyr   0.8.0.1
-#> v tidyr   0.8.3       v stringr 1.4.0  
-#> v readr   1.3.1       v forcats 0.4.0
-#> -- Conflicts ------------------------------------------------------------------------------------------------ tidyverse_conflicts() --
-#> x dplyr::filter() masks stats::filter()
-#> x dplyr::lag()    masks stats::lag()
+suppressPackageStartupMessages(library(tidyverse,warn.conflicts = FALSE))
 library(progress)
 ```
 
@@ -417,7 +401,7 @@ x
 #> NULL
 y <- in_parralel$fun(u,v)
 #> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
-#>   ~ 1.02 secs             ~ 2.04 secs             ~ 3.04 secs             ~ 4.05 secs             ~ 5.07 secs             ~ 6.08 secs
+#>   ~ 1.01 secs             ~ 2.01 secs             ~ 3.02 secs             ~ 4.03 secs             ~ 5.03 secs             ~ 6.05 secs
 y
 #>   speed dist
 #> 1     4    2
