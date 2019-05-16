@@ -395,13 +395,13 @@ fun <- function(y,m){
   Sys.sleep(5)
   head(y, m)
 }
-x <- in_parralel(.wait=FALSE)$fun(u,v)
+x <- in_parallel(.wait=FALSE)$fun(u,v)
 #> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
 x
 #> NULL
-y <- in_parralel$fun(u,v)
+y <- in_parallel$fun(u,v)
 #> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
-#>   ~ 1.01 secs             ~ 2.01 secs             ~ 3.02 secs             ~ 4.03 secs             ~ 5.03 secs             ~ 6.05 secs
+#>   ~ 1.02 secs             ~ 2.03 secs             ~ 3.04 secs             ~ 4.04 secs             ~ 5.04 secs             ~ 6.07 secs
 y
 #>   speed dist
 #> 1     4    2

@@ -14,4 +14,3 @@ shell("git remote add origin https://github.com/moodymudskipper/tags.git",intern
 shell("git push -u origin master",intern = TRUE)
 
 devtools::install_github("moodymudskipper/tags")
-dplyr::everything

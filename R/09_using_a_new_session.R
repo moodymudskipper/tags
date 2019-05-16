@@ -18,11 +18,11 @@
 #'   Sys.sleep(5)
 #'   head(y, m)
 #' }
-#' x <- in_parralel(.wait=FALSE)$fun(u,v)
+#' x <- in_parallel(.wait=FALSE)$fun(u,v)
 #' x
-#' y <- in_parralel$fun(u,v)
+#' y <- in_parallel$fun(u,v)
 #' y
-in_parralel <- tag(args= alist(.wait = TRUE, .path = getwd()),{
+in_parallel <- tag(args= alist(.wait = TRUE, .path = getwd()),{
   CALL[[1]] <- quote(f)
   CALL[-1] <- lapply(names(CALL[-1]),as.symbol)
   objects <- c(f= f, lapply(ARGS,eval), CALL = CALL)

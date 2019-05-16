@@ -228,9 +228,9 @@ fun <- function(y,m){
   Sys.sleep(5)
   head(y, m)
 }
-x <- in_parralel(.wait=FALSE)$fun(u,v)
+x <- in_parallel(.wait=FALSE)$fun(u,v)
 x
-y <- in_parralel$fun(u,v)
+y <- in_parallel$fun(u,v)
 y
 ```
 
