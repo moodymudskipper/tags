@@ -40,10 +40,10 @@ with_pb <- tag(args = alist(
   message = NULL,
   tokens = alist(),
   FUN_ARG=NULL),{
-  #  browser()
+
   if (is.null(FUN_ARG))
     FUN_ARG <- min(which(names(CALL) %in% c("FUN",".f","f")))
-  seq <- eval(ARGS[[1]])
+  seq <- eval.parent(ARGS[[1]])
 
   fun <- rlang::as_function(eval(CALL[[FUN_ARG]]))
 
@@ -59,8 +59,5 @@ with_pb <- tag(args = alist(
     total = length(seq))
 
   if(!is.null(message)) pb$message(message)
-  eval(CALL)
+  eval.parent(CALL)
 })
-
-
-
