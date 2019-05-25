@@ -12,7 +12,7 @@
 bng <- tag({
   exprs <- do.call(rlang::exprs, ARGS)
   call <- as.call(c(f, exprs))
-  eval(call)})
+  eval.parent(call)})
 
 #' lbd tag to use formula notation on FUN arguments
 #'
@@ -25,9 +25,9 @@ bng <- tag({
 lbd <- tag({
   if ("FUN" %in% names(ARGS)){
     call <- CALL
-    call[["FUN"]] <- rlang::as_function(eval(call[["FUN"]]))
+    call[["FUN"]] <- rlang::as_function(eval.parent(call[["FUN"]]))
   }
-  eval(call)
+  eval.parent(call)
 })
 
 
@@ -50,7 +50,7 @@ on_self <- tag({
     rlang::expr(purrr::as_mapper(!!.)(!!rlang::sym(.y)))
   } else .)
   call <- as.call(c(f, args))
-  eval(call)})
+  eval.parent(call)})
 
 
 
@@ -78,7 +78,7 @@ on_self <- tag({
 #' grp$summarize(
 #'   iris,meanSW = mean(Sepal.Width), .by= vars(Species, long_sepal = Sepal.Width > 3.2))
 grp <- tag(args = alist(.by=),{
-  data <- eval(ARGS[[1]])
+  data <- eval.parent(ARGS[[1]])
   f_args <- as.list(match.call())
   f_args[1:2]     <- NULL # function and data
   f_args[[".by"]] <- NULL

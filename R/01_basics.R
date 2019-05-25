@@ -6,10 +6,13 @@
 #' @examples
 #' logging$head(cars,2)
 logging <- tag(args = alist(.time = TRUE, .print = TRUE),{
-  message(deparse(match.call()))
-  cat("  ~ ...")
-  if(.time) cat("\b\b\b", system.time(res <- eval(CALL))[3], "sec\n") else
-    res <- eval(CALL)
+  message(deparse(sys.call()))
+  if(.time) {
+    time_sec <- system.time(res <- eval.parent(CALL))[3]
+    cat("  ~", time_sec, "sec\n")
+    } else {
+    res <- eval.parent(CALL)
+    }
   if(.print) print(res)
   invisible(res)
 })
@@ -27,21 +30,26 @@ strictly <- tag(args = alist(warn=2),{
   w <- options("warn")[[1]]
   on.exit(options(warn=w))
   options(warn= warn)
-  eval(CALL)
+  eval.parent(CALL)
 })
+
+fun <- function(f,y) strictly(0)$f(y)
 
 
 #' dbg tag to debug a call
 #' @export
 dbg <- tag({
+  browser()
   debugonce(f)
-  exec("f", !!!purrr::map(ARGS, eval))
+  exec("f", !!!purrr::map(ARGS, eval.parent, 2))
 })
+
+
 
 #' viewing tag to view the output of a call
 #' @export
 viewing <- tag(args = alist(.title = "View"),{
-  res <- eval(CALL)
+  res <- eval.parent(CALL)
   View(res,title = .title)
   res
 })
@@ -58,11 +66,11 @@ viewing <- tag(args = alist(.title = "View"),{
 #' trying$paste("hello", world, .else = "hi", .silent = TRUE)
 trying <- tag(
   args = alist(.else=, .silent = FALSE),{
-    res <- try(eval(CALL), silent = .silent)
+    res <- try(eval.parent(CALL), silent = .silent)
     if(inherits(res, "try-error")){
       res <- .else
       if(rlang::inherits_any(res, c("function","formula")))
-        res <- rlang::as_function(res)(eval(ARGS[[1]]))
+        res <- rlang::as_function(res)(eval.parent(ARGS[[1]]))
     }
     res
   })
@@ -75,13 +83,12 @@ trying <- tag(
 preserving_attr <- tag(args = alist(
   .arg = 1, incl_row.names = FALSE, incl_class = FALSE,
   incl_names = FALSE, incl_dim = FALSE), {
-    #browser()
-    eval(expr(attr_saved <- attributes(!!(ARGS[[.arg]]))))
+    eval.parent(expr(attr_saved <- attributes(!!(ARGS[[.arg]]))))
     attr_saved[names(attr_saved) %in% c(
       "row.names"[!incl_row.names],
       "class"[!incl_class],
       "dim"[!incl_dim])] <- NULL
-    res <- eval(CALL)
+    res <- eval.parent(CALL)
     attributes(res)[names(attr_saved)] <- attr_saved
     res
   })

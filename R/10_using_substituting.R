@@ -13,7 +13,7 @@
 #' using(vec)[[.>=a]] # rather than ; vec >= vec["a"]
 using <- tag(args= alist(.envir=),{
   if(is.atomic(.envir)) .envir <- as.list(.envir)
-  eval(CALL, envir = .envir)
+  eval.parent(CALL, envir = .envir)
 })
 # we can't give the tag adverb a class and attribute through the use of the `tag`
 # function alone so we edit the body afterwards

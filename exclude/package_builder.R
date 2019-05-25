@@ -9,6 +9,8 @@ usethis::use_gpl3_license("GPL-3")
 
 usethis::use_readme_rmd()
 
+usethis::use_testthat()
+
 
 shell("git remote add origin https://github.com/moodymudskipper/tags.git",intern = TRUE)
 shell("git push -u origin master",intern = TRUE)

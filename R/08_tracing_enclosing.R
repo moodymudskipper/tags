@@ -34,10 +34,8 @@ tracing <- tag(args= alist(tracer=NULL, exit=NULL, at=1, edit = FALSE),{
 #'           .after = print(paste("result was:", .)),
 #'           .around = suppressWarnings)$sqrt(-1)
 enclosing <- tag(args= alist(.before=NULL, .after=NULL, .around = identity),{
-  eval(rlang::enexpr(.before))
-  . <- eval(bquote(rlang::as_function(.around)(.(CALL))))
+  eval.parent(rlang::enexpr(.before))
+  . <- eval.parent(bquote(rlang::as_function(.(rlang::enexpr(.around)))(.(CALL))))
   eval(rlang::enexpr(.after))
   .
 })
-
-
