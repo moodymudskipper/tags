@@ -1,4 +1,6 @@
-#' bng tag to enable tidy evaluation or arguments
+# 5 functions
+
+#' using_bang tag to enable tidy evaluation or arguments
 #'
 #' Use tidy evaluation on all arguments
 #'
@@ -8,30 +10,30 @@
 #' v <- quote(dist)
 #' w <- rlang::quo(time)
 #' x <- list(a=c(1, 2), b=c(3, 4))
-#' bng$transform(head(cars,2), !!w := !!v / !!rlang::sym(u), !!!x)
-bng <- tag({
-  exprs <- do.call(rlang::exprs, ARGS)
+#' using_bang$transform(head(cars,2), !!w := !!v / !!rlang::sym(u), !!!x)
+using_bang <- tag({
+  exprs <- eval.parent(bquote(do.call(rlang::exprs, .(F_ARGS(eval = FALSE, type = "raw")))))
+  #exprs <- do.call(rlang::exprs, F_ARGS(eval = FALSE, type = "raw"))
   call <- as.call(c(f, exprs))
   eval.parent(call)})
 
-#' lbd tag to use formula notation on FUN arguments
+#' using_lambda tag to use formula notation on FUN arguments
 #'
 #' inspired by `gsubfn::fn`, `..fn` is similar but use `rlang::as_function`
 #' while *gsubfn* uses its own API.
 #'
 #' @export
 #' @examples
-#' lbd$ave(c(1,2,4,3,NA),c(1,1,2,2,2),FUN = ~mean(.,na.rm=TRUE))
-lbd <- tag({
-  if ("FUN" %in% names(ARGS)){
-    call <- CALL
+#' using_lambda$ave(c(1,2,4,3,NA),c(1,1,2,2,2),FUN = ~mean(.,na.rm=TRUE))
+using_lambda <- tag({
+  if ("FUN" %in% names(F_ARGS(eval = FALSE))){
+    call <- CALL(eval = FALSE)
     call[["FUN"]] <- rlang::as_function(eval.parent(call[["FUN"]]))
   }
   eval.parent(call)
 })
 
-
-#' on_self tag to allow self referencing in arguments
+#' self_referencing tag to allow self referencing in arguments
 #'
 #' Enhance functions like `transform`, `mutate`, `summarize` ... by allowing
 #' arguments to reference themselves when they are formulas.
@@ -43,10 +45,13 @@ lbd <- tag({
 #' @export
 #'
 #' @examples
-#' on_self$transform(head(iris,2), Petal.Width = ~1000*(.), Species = ~toupper(.))
-#' on_self$summarize(iris, Petal.Width = ~median(.), Sepal.Length = ~mean(.))
-on_self <- tag({
-  args <- purrr::imap(ARGS, ~if(is.call(.) && identical(.[[1]],quote(`~`))) {
+#' self_referencing$transform(head(iris,2), Petal.Width = ~1000*(.), Species = ~toupper(.))
+#' \dontrun{
+#' library(dplyr)
+#' self_referencing$summarize(iris, Petal.Width = ~median(.), Sepal.Length = ~mean(.))
+#' }
+self_referencing <- tag({
+  args <- purrr::imap(F_ARGS(eval = FALSE), ~if(is.call(.) && identical(.[[1]],quote(`~`))) {
     rlang::expr(purrr::as_mapper(!!.)(!!rlang::sym(.y)))
   } else .)
   call <- as.call(c(f, args))
@@ -54,7 +59,7 @@ on_self <- tag({
 
 
 
-#' grp tag to group and ungroup around another operation
+#' grouping_by tag to group and ungroup around another operation
 #'
 #' The tagged function gains a parameter `.by`, groups that existed before
 #' are preserved. One can group by a computed variable, it will be kept if
@@ -66,20 +71,23 @@ on_self <- tag({
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' library(dplyr)
-#' grp$summarize(iris,meanSL = mean(Sepal.Length), .by="Species")
-#' grp(.by="Species")$summarize(iris,meanSL = mean(Sepal.Length))
-#' grp$summarize_all(iris, mean, .by="Species")
-#' grp$slice(iris,1, .by="Species")
+#' grouping_by$summarize(iris,meanSL = mean(Sepal.Length), .by="Species")
+#' grouping_by(.by="Species")$summarize(iris,meanSL = mean(Sepal.Length))
+#' grouping_by$summarize_all(iris, mean, .by="Species")
+#' grouping_by$slice(iris,1, .by="Species")
 #' # unnamed groupings are not kept
-#' grp$summarize(
+#' grouping_by$summarize(
 #'   iris,meanSW = mean(Sepal.Width), .by= vars(Species, Sepal.Width > 3.2))
 #' # named groupings are kept
-#' grp$summarize(
+#' grouping_by$summarize(
 #'   iris,meanSW = mean(Sepal.Width), .by= vars(Species, long_sepal = Sepal.Width > 3.2))
-grp <- tag(args = alist(.by=),{
-  data <- eval.parent(ARGS[[1]])
+#'   }
+grouping_by <- tag(args = alist(.by=),{
+  #data <- eval.parent(F_ARGS()[[1]])
   f_args <- as.list(match.call())
+  data <- eval.parent(f_args[[2]])
   f_args[1:2]     <- NULL # function and data
   f_args[[".by"]] <- NULL
 
@@ -111,12 +119,16 @@ grp <- tag(args = alist(.by=),{
 
 
 
-#' rw tag to apply a transformation rowwise
+#' using_rowwise tag to apply a transformation rowwise
 #' @export
 #' @examples
-#' rw$mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
+#' \dontrun{
+#' library(dplyr)
+#' using_rowwise$mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
 #' mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
-rw <- tag({
-  CALL[[2]] <- bquote(dplyr::rowwise(.(CALL[[2]])))
-  eval.parent(bquote(dplyr::ungroup(.(CALL))))
+#' }
+using_rowwise <- tag({
+  call <- CALL(eval = FALSE)
+  call[[2]] <- bquote(dplyr::rowwise(.(call[[2]])))
+  eval.parent(bquote(dplyr::ungroup(.(call))))
 })

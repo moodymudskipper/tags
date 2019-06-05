@@ -1,3 +1,5 @@
+# 1 function
+
 # can we make fs a legit tag / tag_adverb ?
 # maybe, the twist is that the tag adverb must build a tag itself and that we
 # need a way in the end to stop the chain, which can be done with `[`
@@ -18,13 +20,11 @@
 # other example :
 # fs$head$dim[iris]
 
-# fs can be a tag with zero arg rather than a tag_adverb, it will create another
-# tag with the args from head, wch
-
-
-#' fs tag_adverb to start a dollar piped functional sequence
+#' composing tag to start a dollar piped functional sequence
 #'
-#' Based on `%>%` from the package magrittr
+#' `composing` is a tag wrapped around *magrittr*'s functional sequence
+#' feature. It works in similar ways except that it uses `$` rather than
+#' `%>%` and doesn't start with a dot.
 #'
 #' @param x a function
 #'
@@ -33,29 +33,30 @@
 #' @importFrom magrittr "%>%"
 #' @examples
 #'\dontrun{
-#' fs(head)$dim()(iris)
-#' fs$head(2)$gsub("h","X",.)(c("hello","hi","foo"))##
+#' composing()(head)$dim()(iris)
+#' composing$head(2)$gsub("h","X",.)(c("hello","hi","foo"))
 #' }
-fs <- function(x) {
+#' @name composing
+adv <- function(x) {
+  if(!requireNamespace("magrittr"))
+    stop("Install the magrittr package to use the tag `composing()`")
   res <- eval.parent(substitute((. %>% identity)$x))
   add_class(res, "tag_functional_sequence")
 }
-fs <- add_class(fs, "tag_adverb")
+adv <- add_class(adv, "tag_adverb")
+composing <- tag::as_tag(adv)
+attr(composing, "definition") <-
+ bquote({
+    adv <- .(adv)
+    adv <- add_class(adv, "tag_adverb")
+    as_tag(adv)
+  })
+rm(adv)
 
-# x <- quote(fs$head(2))
-# dollar_to_pipe(x)
-# dollar_to_pipe <- function(x){
-#   call <- do.call(substitute, list(x, list(`$` = quote(`%>%`))))
-#   call <- as.list(call)
-#   call[[1]] <- as.list(call[[1]])
-#   call[[c(1,3)]] <- c(call[[c(1, 3)]], call[-1])
-#   call <- call[[1]]
-#   call[[3]] <- as.call(call[[3]])
-#   call <- as.call(call)
-#   call
-# }
-
+#' fseq method for the dollar operator
 #' @method $ fseq
+#' @param e1 lhs
+#' @param e2 rhs
 #' @export
 #' @importFrom magrittr "%>%"
 #' @rdname dollar_methods
@@ -64,20 +65,14 @@ fs <- add_class(fs, "tag_adverb")
   # the first eval substitute will substitute e2, but not e1
   res <- eval(substitute(
     as.function(alist(...=,{
-      # the second eval subtitute is double and will first replace list_call
-      # by `list(...)` and then replace `list` by `. %>% e1 %>% e2`
-      # then the expression will be deparsed to remove the annoying parenthesis
-      # as the expression became `(. %>% e1 %>% e2)(...)`
-      # then parsed back and evaluated
-      call0 <- eval(substitute(substitute(
-        list_call,
-        list(list = quote(. %>% e1 %>% e2))),
-        list(list_call = substitute(list(...)))))
-      call0_str <- deparse(call0)
-      fun <- eval(parse(text=sub("\\(","",gsub("\\)\\(","(",call0_str))))
+      fun <- quote(. %>% e1 %>% e2)
+      fun[[3]] <-as.call(c(
+        fun[[3]],
+        eval(substitute(alist(...)))))
+      fun <- eval(fun)
       fun
     })),
-    list(e2=substitute(e2))))
+    list(e2=as.symbol(substitute(e2)))))
   add_class(res,"tag_functional_sequence")
 }
 
