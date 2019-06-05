@@ -10,22 +10,17 @@ It allows things like the following :
 ``` r
 library(tags)
 df_name <- "iris"
+# use quasi quotation with any function
 using_bang$head(!!rlang::sym(df_name),1)
 #>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
 #> 1          5.1         3.5          1.4         0.2  setosa
+# use purrr adverbs with tag syntax
 using_possibly$log("a", .otherwise = NA_real_)
 #> [1] NA
+# use withr functions with tag syntax
 setting_options(list(scipen = 100))$print(exp(100))
 #> Loading required namespace: withr
 #> [1] 26881171418161356094440640202808862000420226
-library(dplyr,warn.conflicts = FALSE)
-grouping_by("Species")$summarize(iris,meanSL = mean(Sepal.Length))
-#> # A tibble: 3 x 2
-#>   Species    meanSL
-#>   <fct>       <dbl>
-#> 1 setosa       5.01
-#> 2 versicolor   5.94
-#> 3 virginica    6.59
 ```
 
 Installation and setup :
@@ -143,7 +138,7 @@ setting_package("lattice")$fun(x = -2:2, y = dnorm(-2:2))
 ``` r
 c(setting_seed(1)$sample(1e4,1), sample(1e4,1), 
   setting_seed(1)$sample(1e4,1), sample(1e4,1))
-#> [1] 1017  576 1017 7570
+#> [1] 1017 7275 1017 9309
 ```
 
 See also `setting_bmp`, `setting_cairo_pdf`, `setting_cairo_ps`, `setting_collate`, `setting_connection`, `setting_db_connection`, `setting_dir`, `setting_environment`, `setting_envvar`, `setting_file`, `setting_jpeg`, `setting_libpaths`, `setting_locale`, `setting_makevars`, `setting_message_sink`, `setting_namespace`, `setting_output_sink`, `setting_par`, `setting_path`, `setting_pdf`, `setting_png`, `setting_postscript`, `setting_preserve_seed`, `setting_svg`, `setting_temp_libpaths`, `setting_tempfile`, `setting_tiff`, `setting_xfig`
@@ -236,7 +231,7 @@ reversing_dots$paste("a","b")
 ``` r
 x <- logging$Sys.sleep(2)
 #> logging$Sys.sleep(2)
-#>   ~ 2.03 sec
+#>   ~ 2.04 sec
 #> NULL
 x <- logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)
 #> logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)

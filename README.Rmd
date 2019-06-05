@@ -24,14 +24,13 @@ It allows things like the following :
 ```{r}
 library(tags)
 df_name <- "iris"
+# use quasi quotation with any function
 using_bang$head(!!rlang::sym(df_name),1)
+# use purrr adverbs with tag syntax
 using_possibly$log("a", .otherwise = NA_real_)
+# use withr functions with tag syntax
 setting_options(list(scipen = 100))$print(exp(100))
-library(dplyr,warn.conflicts = FALSE)
-grouping_by("Species")$summarize(iris,meanSL = mean(Sepal.Length))
-
 ```
-
 
 Installation and setup :
 
