@@ -24,12 +24,3 @@ shell("git remote add origin https://github.com/moodymudskipper/tags.git",intern
 shell("git push -u origin master",intern = TRUE)
 
 devtools::install_github("moodymudskipper/tags")
-
-
-* some tags were removed
-* many were renamed for consistency
-* many more were added
-* all tags were rewritten to satisfy new tag syntax
-* composing (ex fs) is now a proper tag
-* The README was completely reworked
-* documentation was improved
