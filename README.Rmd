@@ -61,9 +61,11 @@ following categories.
    `reversing_dots` to edit the dots passed to a call before it's executed, 
    using `dplyr` semantics.
 * tags focused on side effects
+    - `logging` to print call and execution time (wraps `Sys.time()`)
+    - `suppressing_warnings` to selectively suppress warnings based on a regular
+   expression.
     - `viewing` (wraps `utils::View`)
     - `debugging` (wraps `base::debugonce`)
-    - `logging` to print call and execution time (wraps `Sys.time()`)
     - `progressing` to add a progress bar to any functional (wraps `progress::progress_bar`)
     - `beeping` to play a sound once the call is over (wraps `beepr::beep`)
     - `popping_up` to trigger a message box once the call is over (wraps `tcltk::tk_messageBox`)
@@ -76,8 +78,6 @@ following categories.
     - `tracing` as a tag counterpart to `base::trace`
     - `enclosing` to enclose the input function in another function.
     - `preserving_attr` to make sure some attributes are preserved
-    - `suppressing_warnings` to selectively suppress warnings based on a regular
-   expression.
     - `checking_args` to operate checks on arguments before calling the function
 
 ### tag counterparts to `base` and `purrr` adverbs :
@@ -266,3 +266,7 @@ mean(1:5, na.rm = 1) # 1 is coerced to TRUE
 checking_args(is.logical(na.rm))$mean(1:5, na.rm = 1)
 checking_args(is.logical(na.rm),"na.rm should be logical!")$mean(1:5, na.rm = 1)
 ```
+
+
+
+
