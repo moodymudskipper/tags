@@ -5,9 +5,28 @@ tags
 
 This package consists of a collection of tags built using the functions and principle designed and described in the package *tag*. See the read me at : <https://github.com/moodymudskipper/tag>.
 
-It is still largely in progress and subject to important changes such as addition /removal/ renaming of functions and arguments etc.
+It allows things like the following :
 
-We showcase hereby the tags from the package.
+``` r
+library(tags)
+df_name <- "iris"
+using_bang$head(!!rlang::sym(df_name),1)
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         0.2  setosa
+using_possibly$log("a", .otherwise = NA_real_)
+#> [1] NA
+setting_options(list(scipen = 100))$print(exp(100))
+#> Loading required namespace: withr
+#> [1] 26881171418161356094440640202808862000420226
+library(dplyr,warn.conflicts = FALSE)
+grouping_by("Species")$summarize(iris,meanSL = mean(Sepal.Length))
+#> # A tibble: 3 x 2
+#>   Species    meanSL
+#>   <fct>       <dbl>
+#> 1 setosa       5.01
+#> 2 versicolor   5.94
+#> 3 virginica    6.59
+```
 
 Installation and setup :
 
@@ -16,206 +35,87 @@ Installation and setup :
 # devtools::install_github("moodymudskipper/tags")
 library(tags)
 suppressPackageStartupMessages(library(tidyverse,warn.conflicts = FALSE))
-library(progress)
 ```
 
-### Basic tags
+The package contains over 50 tags that can be divided into the following categories.
 
-#### `strictly` tag to adjust strictness of a call
+-   tag counterparts to `base` and `purrr` adverbs :
+    -   `vectorizing` (wraps `base::Vectorize`)
+    -   `negating` (wraps `base::Negate`)
+    -   `using_safely` (borrows code from `purrr::safely`)
+    -   `using_quietly` (borrows code from `purrr::quietly`)
+    -   `using_possibly` (borrows code from `purrr::possibly`)
+-   tag counterparts to `withr` functions :
+    -   all 31 `withr::with_*` functions have `tags::setting_*` counterparts
+-   tag expanding *tidyverse* features :
+    -   `using_bang` to make any function compatible with quasi-quotation
+    -   `using_lambda` to use formula notation in any functional
+    -   `grouping_by` to use `dplyr::group_by` on a single operation
+    -   `using_rowwise` to use `dplyr::rowwise` on a single operation
+    -   `selecting_dots`, `renaming_dots`, `mutating_dots`, `transmuting_dots`, `reversing_dots` to edit the dots passed to a call before it's executed, using `dplyr` semantics.
+-   tags focused on side effects
+    -   `viewing` (wraps `utils::View`)
+    -   `debugging` (wraps `base::debugonce`)
+    -   `logging` to print call and execution time (wraps `Sys.time()`)
+    -   `progressing` to add a progress bar to any functional (wraps `progress::progress_bar`)
+    -   `beeping` to play a sound once the call is over (wraps `beepr::beep`)
+    -   `popping_up` to trigger a message box once the call is over (wraps `tcltk::tk_messageBox`)
+-   other tags
+    -   `composing` as an alternative to piping/functional sequences (wraps *magrittr*'s functional sequences)
+    -   `using` as the tag counterpart to `with`, with extra features
+    -   `mapping` to loop over argument values (wraps `foreach::foreach`)
+    -   `self_referencing` to avoid variable repetition with functions such as `base::transform` / `dplyr::mutate`, `dplyr::summarize`
+    -   `tracing` as a tag counterpart to `base::trace`
+    -   `enclosing` to enclose the input function in another function.
+    -   `preserving_attr` to make sure some attributes are preserved
+    -   `suppressing_warnings` to selectively suppress warnings based on a regular expression.
+    -   `checking_args` to operate checks on arguments before calling the function
+
+### tag counterparts to `base` and `purrr` adverbs :
+
+#### *base* adverbs
 
 ``` r
-strictly(-1)$sqrt(-1)
-#> [1] NaN
+vectorizing$rep.int(times = 1:3, x = 3:1)
+#> [[1]]
+#> [1] 3
+#> 
+#> [[2]]
+#> [1] 2 2
+#> 
+#> [[3]]
+#> [1] 1 1 1
+vectorizing("times")$rep.int(times = 1:3, x = 42)
+#> [[1]]
+#> [1] 42
+#> 
+#> [[2]]
+#> [1] 42 42
+#> 
+#> [[3]]
+#> [1] 42 42 42
+negating$is.character("foo")
+#> [1] FALSE
 ```
 
-#### `dbg` tag to debug a call
-
-Will run `debugonce` on the input function.
+#### *purrr* adverbs
 
 ``` r
-dbg$sample(5)
-```
-
-#### `logging` tag to log call and time it took
-
-``` r
-logging$head(cars,2)
-#> logging$head(x = cars, 2)
-#>   ~ ... 0 sec
-#>   speed dist
-#> 1     4    2
-#> 2     4   10
-```
-
-#### `trying` tag to try a call or if failure call alternate call
-
-``` r
-trying$paste("hello","world", .else = "hi")
-#> [1] "hello world"
-trying$paste("hello", world, .else = "hi")
-#> Error in (function (..., sep = " ", collapse = NULL)  : 
-#>   object 'world' not found
-#> [1] "hi"
-trying$paste("hello", world, .else = "hi", .silent = TRUE)
-#> [1] "hi"
-```
-
-#### `preserving_attr` tag to preserve attributes
-
-``` r
-preserving_attr$map_dfr(head(iris,2),identity)
-#> # A tibble: 2 x 5
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-#> *        <dbl>       <dbl>        <dbl>       <dbl> <fct>  
-#> 1          5.1         3.5          1.4         0.2 setosa 
-#> 2          4.9         3            1.4         0.2 setosa
-preserving_attr(incl_class = TRUE)$map_dfr(head(iris,2),identity)
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-#> 1          5.1         3.5          1.4         0.2  setosa
-#> 2          4.9         3.0          1.4         0.2  setosa
-```
-
-### Tidy tags
-
-#### `bng` tag to enable tidy evaluation or arguments
-
-``` r
-u <- "speed"
-v <- quote(dist)
-w <- rlang::quo(time)
-x <- list(a=c(1, 2), b=c(3, 4))
-bng$transform(head(cars,2), !!w := !!v / !!rlang::sym(u), !!!x)
-#>   speed dist time a b
-#> 1     4    2  0.5 1 3
-#> 2     4   10  2.5 2 4
-```
-
-#### `lbd` tag to use formula notation on FUN arguments
-
-``` r
-lbd$ave(c(1,2,4,3,NA),c(1,1,2,2,2),FUN = ~mean(.,na.rm=TRUE))
-#> [1] 1.5 1.5 3.5 3.5 3.5
-```
-
-#### `on_self` tag to allow self referencing in arguments
-
-``` r
-on_self$transform(head(iris,2), Petal.Width = ~1000*(.), Species = ~toupper(.))
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-#> 1          5.1         3.5          1.4         200  SETOSA
-#> 2          4.9         3.0          1.4         200  SETOSA
-on_self$summarize(iris, Petal.Width = ~median(.), Sepal.Length = ~mean(.))
-#>   Petal.Width Sepal.Length
-#> 1         1.3     5.843333
-```
-
-#### `grp` tag to group and ungroup around another operation
-
-``` r
-tbl_at_syms <- tags:::tbl_at_syms
-grp$summarize(iris,meanSL = mean(Sepal.Length), .by="Species")
-#> # A tibble: 3 x 2
-#>   Species    meanSL
-#>   <fct>       <dbl>
-#> 1 setosa       5.01
-#> 2 versicolor   5.94
-#> 3 virginica    6.59
-grp(.by="Species")$summarize(iris,meanSL = mean(Sepal.Length))
-#> # A tibble: 3 x 2
-#>   Species    meanSL
-#>   <fct>       <dbl>
-#> 1 setosa       5.01
-#> 2 versicolor   5.94
-#> 3 virginica    6.59
-grp$summarize_all(iris, mean, .by="Species")
-#> # A tibble: 3 x 5
-#>   Species    Sepal.Length Sepal.Width Petal.Length Petal.Width
-#>   <fct>             <dbl>       <dbl>        <dbl>       <dbl>
-#> 1 setosa             5.01        3.43         1.46       0.246
-#> 2 versicolor         5.94        2.77         4.26       1.33 
-#> 3 virginica          6.59        2.97         5.55       2.03
-grp$slice(iris,1, .by="Species")
-#> # A tibble: 3 x 5
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species   
-#>          <dbl>       <dbl>        <dbl>       <dbl> <fct>     
-#> 1          5.1         3.5          1.4         0.2 setosa    
-#> 2          7           3.2          4.7         1.4 versicolor
-#> 3          6.3         3.3          6           2.5 virginica
-# unnamed groupings are not kept
-grp$summarize(
-  iris,meanSW = mean(Sepal.Width), .by= vars(Species, Sepal.Width > 3.2))
-#> # A tibble: 6 x 2
-#>   Species    meanSW
-#>   <fct>       <dbl>
-#> 1 setosa       3.04
-#> 2 setosa       3.63
-#> 3 versicolor   2.75
-#> 4 versicolor   3.35
-#> 5 virginica    2.88
-#> 6 virginica    3.49
-# named groupings are kept
-grp$summarize(
-  iris,meanSW = mean(Sepal.Width), .by= vars(Species, long_sepal = Sepal.Width > 3.2))
-#> # A tibble: 6 x 3
-#>   Species    long_sepal meanSW
-#>   <fct>      <lgl>       <dbl>
-#> 1 setosa     FALSE        3.04
-#> 2 setosa     TRUE         3.63
-#> 3 versicolor FALSE        2.75
-#> 4 versicolor TRUE         3.35
-#> 5 virginica  FALSE        2.88
-#> 6 virginica  TRUE         3.49
-```
-
-#### `rw` tag to apply a transformation rowwise
-
-``` r
-rw$mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
-#> # A tibble: 3 x 6
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species     X
-#>          <dbl>       <dbl>        <dbl>       <dbl> <fct>   <dbl>
-#> 1          5.1         3.5          1.4         0.2 setosa   4.3 
-#> 2          4.9         3            1.4         0.2 setosa   3.95
-#> 3          4.7         3.2          1.3         0.2 setosa   3.95
-mutate(head(iris,3),X = mean(c(Sepal.Length, Sepal.Width)))
-#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species        X
-#> 1          5.1         3.5          1.4         0.2  setosa 4.066667
-#> 2          4.9         3.0          1.4         0.2  setosa 4.066667
-#> 3          4.7         3.2          1.3         0.2  setosa 4.066667
-```
-
-*purrr* adverbs counterparts
-----------------------------
-
-``` r
-safely2$log(10, otherwise = NA_real_)
+using_possibly(.otherwise = NA)$log("a")
+#> [1] NA
+using_safely$log("a")
 #> $result
-#> [1] 2.302585
+#> NULL
 #> 
 #> $error
-#> NULL
-safely2$log("a", otherwise = NA_real_)
+#> <simpleError in .Primitive("log")(x = "a"): non-numeric argument to mathematical function>
+using_safely(.otherwise = NA)$log("a")
 #> $result
 #> [1] NA
 #> 
 #> $error
 #> <simpleError in .Primitive("log")(x = "a"): non-numeric argument to mathematical function>
-safely2(otherwise = NA_real_)$log(10)
-#> $result
-#> [1] 2.302585
-#> 
-#> $error
-#> NULL
-safely2(otherwise = NA_real_)$log("a")
-#> $result
-#> [1] NA
-#> 
-#> $error
-#> <simpleError in .Primitive("log")(x = "a"): non-numeric argument to mathematical function>
-```
-
-``` r
-quietly2$sqrt(-1)
+using_quietly$sqrt(-1)
 #> $result
 #> [1] NaN
 #> 
@@ -227,212 +127,261 @@ quietly2$sqrt(-1)
 #> 
 #> $messages
 #> character(0)
-quietly2$sqrt(4)
-#> $result
-#> [1] 2
-#> 
-#> $output
-#> [1] ""
-#> 
-#> $warnings
-#> character(0)
-#> 
-#> $messages
-#> character(0)
 ```
 
+### tag counterparts to `withr` functions
+
 ``` r
-possibly2$log("a", otherwise = NA_real_)
-#> [1] NA
-possibly2$log(10, otherwise = NA_real_)
-#> [1] 2.302585
+setting_options(c(scipen = "999"))$print(exp(100))
+#> [1] 26881171418161356094440640202808862000420226
+fun <- function(x, y){ xyplot(y ~ x, data.frame(x = x, y = y))}
+setting_package("lattice")$fun(x = -2:2, y = dnorm(-2:2))
 ```
 
-functional sequences
---------------------
-
-This tag is not yet coded consistently to the other tags.
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 ``` r
-fs(head)$dim()(iris)
-#> [1] 6 5
-fs$head(2)$gsub("h","X",.)(c("hello","hi","foo"))
-#> [1] "Xello" "Xi"
+c(setting_seed(1)$sample(1e4,1), sample(1e4,1), 
+  setting_seed(1)$sample(1e4,1), sample(1e4,1))
+#> [1] 1017  576 1017 7570
 ```
 
-dot operations
---------------
+See also `setting_bmp`, `setting_cairo_pdf`, `setting_cairo_ps`, `setting_collate`, `setting_connection`, `setting_db_connection`, `setting_dir`, `setting_environment`, `setting_envvar`, `setting_file`, `setting_jpeg`, `setting_libpaths`, `setting_locale`, `setting_makevars`, `setting_message_sink`, `setting_namespace`, `setting_output_sink`, `setting_par`, `setting_path`, `setting_pdf`, `setting_png`, `setting_postscript`, `setting_preserve_seed`, `setting_svg`, `setting_temp_libpaths`, `setting_tempfile`, `setting_tiff`, `setting_xfig`
 
-`selecting_dots`, `renaming_dots`, `mutating_dots`, and `transmuting_dots` are wrappers around *dplyr* functions.
+### tag expanding *tidyverse* features
 
-`reversing_dots` flips the arguments fed to the `...`.
+#### quasi quotation and lambda functions
 
 ``` r
-# the functions can be used in regular cal
-reversing_dots$paste0("a", "b")
-#> [1] "ba"
-selecting_dots(vars(b2,starts_with("a")))$
-  transform(head(cars,2), a1 = 1, b1 = 2, a2 = 3, b2 = speed *100)
-#>   speed dist  b2 a1 a2
-#> 1     4    2 400  1  3
-#> 2     4   10 400  1  3
-mutating_dots(exprs(foo = 1000 * bar))$
-  mutate(head(cars,2), bar = speed * 10)
-#>   speed dist bar   foo
-#> 1     4    2  40 40000
-#> 2     4   10  40 40000
-# or with forwarded dots
+df_name <- "iris"
+using_bang$head(!!rlang::sym(df_name),2)
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         0.2  setosa
+#> 2          4.9         3.0          1.4         0.2  setosa
+using_lambda$ave(1:6,rep(1:2,each = 3), FUN = ~median(.)*10)
+#> [1] 20 20 20 50 50 50
+```
+
+#### grouping
+
+group or apply `rowwise` for a single operation.
+
+``` r
+library(dplyr,warn.conflicts = FALSE, quiet = TRUE)
+iris %>%
+  grouping_by("Species")$summarize(meanSL = mean(Sepal.Length))
+#> # A tibble: 3 x 2
+#>   Species    meanSL
+#>   <fct>       <dbl>
+#> 1 setosa       5.01
+#> 2 versicolor   5.94
+#> 3 virginica    6.59
+head(starwars) %>%
+    using_rowwise$transmute(film1 = films[1])
+#> # A tibble: 6 x 1
+#>   film1               
+#>   <chr>               
+#> 1 Revenge of the Sith 
+#> 2 Attack of the Clones
+#> 3 Attack of the Clones
+#> 4 Revenge of the Sith 
+#> 5 Revenge of the Sith 
+#> 6 Attack of the Clones
+```
+
+### dot operations
+
+We can edit the dots wether we feed them to the manufactured function directly or pass them through another.
+
+``` r
+library(rlang, ,warn.conflicts = FALSE)
 fun <- function(...){
-  print(
-    selecting_dots(vars(b2,starts_with("a")))$
-      mutate(head(cars,2), ...))
-  print(
-    renaming_dots(vars(foo = a1))$
-      mutate(head(cars,2), ...))
-  print(
-    mutating_dots(exprs(a2 = 100*a2 + a1, foo = 1000 * b1))$
-      mutate(head(cars,2), ...))
-  print(
-    transmuting_dots(exprs(a2 = 100*a2 + a1, foo = 1000 * b1))$
-      mutate(head(cars,2), ...))
-  print(
-    reversing_dots$mutate(head(cars,2), ...))
+  lst(
+    selecting_dots(vars(starts_with("b")))$paste(...),
+    renaming_dots(exprs(quz = bar))$tibble(...),
+    mutating_dots(exprs(foo = paste0(toupper(foo), bar)))$tibble(...),
+    transmuting_dots(exprs(foo = paste0(toupper(foo), bar)))$tibble(...)
+    )
 }
-fun(a1 = 1, b1 = 2, a2 = 3, b2 = 40)
-#>   speed dist b2 a1 a2
-#> 1     4    2 40  1  3
-#> 2     4   10 40  1  3
-#>   speed dist foo b1 a2 b2
-#> 1     4    2   1  2  3 40
-#> 2     4   10   1  2  3 40
-#>   speed dist a1 b1  a2 b2  foo
-#> 1     4    2  1  2 301 40 2000
-#> 2     4   10  1  2 301 40 2000
-#>   speed dist  a2  foo
-#> 1     4    2 301 2000
-#> 2     4   10 301 2000
-#>   speed dist b2 a2 b1 a1
-#> 1     4    2 40  3  2  1
-#> 2     4   10 40  3  2  1
+fun(foo = "a", bar = "b", baz = "c")
+#> $`selecting_dots(vars(starts_with("b")))$paste(...)`
+#> [1] "b c"
+#> 
+#> $`renaming_dots(exprs(quz = bar))$tibble(...)`
+#> # A tibble: 1 x 3
+#>   foo   quz   baz  
+#>   <chr> <chr> <chr>
+#> 1 a     b     c    
+#> 
+#> $`mutating_dots(exprs(foo = paste0(toupper(foo), bar)))$tibble(...)`
+#> # A tibble: 1 x 3
+#>   foo   bar   baz  
+#>   <chr> <chr> <chr>
+#> 1 Ab    b     c    
+#> 
+#> $`transmuting_dots(exprs(foo = paste0(toupper(foo), bar)))$tibble(...)`
+#> # A tibble: 1 x 1
+#>   foo  
+#>   <chr>
+#> 1 Ab
+
+reversing_dots$paste("a","b")
+#> [1] "b a"
 ```
 
-formal operations
------------------
+### tags focused on side effects
 
-**Work in progress**
-
-`selecting_args`, `renaming_args`, `mutating_args`, and `transmuting_args` will change the formals of the functions.
-
-They cannot be coded using the `tag` function only.
-
-using a progress bar
---------------------
-
-Detects the functional and displays a progress bar, using all the available options from package *progress*.
+`logging` to print and time a call
 
 ``` r
-with_pb$map(1:5, ~{Sys.sleep(1);.x*2})
-#> [[1]]
-#> [1] 2
-#> 
-#> [[2]]
-#> [1] 4
-#> 
-#> [[3]]
-#> [1] 6
-#> 
-#> [[4]]
-#> [1] 8
-#> 
-#> [[5]]
-#> [1] 10
-with_pb$lapply(1:5, function(x) {Sys.sleep(1);x*2})
-#> [[1]]
-#> [1] 2
-#> 
-#> [[2]]
-#> [1] 4
-#> 
-#> [[3]]
-#> [1] 6
-#> 
-#> [[4]]
-#> [1] 8
-#> 
-#> [[5]]
-#> [1] 10
+x <- logging$Sys.sleep(2)
+#> logging$Sys.sleep(2)
+#>   ~ 2.03 sec
+#> NULL
+x <- logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)
+#> logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)
 ```
 
-tracing and enclosing
----------------------
-
-`tracing` is modelled after `base::trace` and edits the body of its input function while `enclosing` wraps the input function call inside a call to function `.around`, between statements `.before` and `.after`.
+`suppressing_warnings` to selectively suppress warnings based on a regular expression.
 
 ``` r
-tracing(quote(print("hello")), exit = quote(print("good bye")))$mean(1:5)
-#> [1] "hello"
-#> [1] "good bye"
-#> [1] 3
-enclosing(.before = print("hello"),
-          .after = print(paste("result was:", .)),
-          .around = suppressWarnings)$sqrt(-1)
+fun <- function(x) {
+  warning("ooops", call. = FALSE)
+  sqrt(x)
+}
+fun(-1)
+#> Warning: ooops
+#> Warning in sqrt(x): NaNs produced
+#> [1] NaN
+suppressing_warnings$fun(-1)
+#> [1] NaN
+suppressing_warnings("prod")$fun(-1)
+#> Warning: ooops
+#> [1] NaN
+suppressing_warnings(~startsWith(., "o"))$fun(-1)  
+#> Warning in sqrt(x): NaNs produced
+#> [1] NaN
+```
+
+``` r
+# open the output in the viewer
+viewing$head(iris,2) 
+# run debugonce on input function
+debugging$mean(1:5)  
+# add a progress bar to a functional using `progress::progress_bar`
+progressing$sapply(1:4, ~Sys.sleep(1))
+# beep after the call finishes using `beepr::beep`
+beeping$Sys.sleep(1)
+# message after the call finishes using `tcltk::tk_messageBox`
+popping_up("done!")$Sys.sleep(1)
+```
+
+### other tags
+
+`composing` as an alternative to piping/functional sequences (wraps *magrittr*'s functional sequences)
+
+``` r
+f <- composing$head$dim()
+f(iris)
+#> [1] 6 5
+composing$head(1)$rename_all(toupper)(iris)
+#>   SEPAL.LENGTH SEPAL.WIDTH PETAL.LENGTH PETAL.WIDTH SPECIES
+#> 1          5.1         3.5          1.4         0.2  setosa
+```
+
+`using` as the tag counterpart to `with`, with extra features using methods `[.tag_using` and `[[.tag_using`
+
+``` r
+using(iris)$tapply(Sepal.Length, Species, FUN = mean)
+#>     setosa versicolor  virginica 
+#>      5.006      5.936      6.588
+vec <- c(a = 1, b = 3, c = 2, d = 4)
+using(vec)[. < b]
+#> a c 
+#> 1 2
+using(vec)[[d * length(.)]]
+#> [1] 16
+```
+
+`mapping` to loop over argument values (wraps `foreach::foreach`)
+
+``` r
+mapping(list(times=1:3,x=4:6))$rep()
+#> Loading required namespace: foreach
+#> [[1]]
+#> [1] 4
+#> 
+#> [[2]]
+#> [1] 5 5
+#> 
+#> [[3]]
+#> [1] 6 6 6
+mapping(list(times=1:3))$rep(4:6)
+#> [[1]]
+#> [1] 4 5 6
+#> 
+#> [[2]]
+#> [1] 4 5 6 4 5 6
+#> 
+#> [[3]]
+#> [1] 4 5 6 4 5 6 4 5 6
+```
+
+`self_referencing` to avoid variable repetition
+
+``` r
+head(iris,2) %>%
+  self_referencing$transmute(
+    Sepal.Area = Sepal.Length * Sepal.Width,
+    Petal.Length = ~.*100,
+    Species = ~toupper(.))
+#>   Sepal.Area Petal.Length Species
+#> 1      17.85          140  SETOSA
+#> 2      14.70          140  SETOSA
+```
+
+`tracing` as a tag counterpart to `base::trace`
+
+``` r
+h <- tracing(quote(message("Show first rows")), .exit = quote(print("exiting!")))$head
+h(iris,2)
+#> Show first rows
+#> [1] "exiting!"
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#> 1          5.1         3.5          1.4         0.2  setosa
+#> 2          4.9         3.0          1.4         0.2  setosa
+```
+
+`wrapping` to wrap a call
+
+``` r
+wrapping(
+  .before = print("hello"),
+  .after = print(paste("result was:", .)),
+  .around = suppressWarnings)$sqrt(-1)
 #> [1] "hello"
 #> [1] "result was: NaN"
 #> [1] NaN
 ```
 
-`in_parallel` tag to execute a call in another session
-------------------------------------------------------
-
-When using this tag the function and its arguments are evaluated and saved so the call can be executed in another session, it allows things like displaying time elapsed or % of esimated time, or setting a timeout.
-
-**work in progress** (but already works with limited features)
+`preserving_attr` to make sure some attributes are preserved
 
 ``` r
-u <- cars
-v <- 3
-fun <- function(y,m){
-  Sys.sleep(5)
-  head(y, m)
-}
-x <- in_parallel(.wait=FALSE)$fun(u,v)
-#> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
-x
+x <- "foo"
+attr(x,"my_attribute") <- "bar"
+attr(paste0(x, "!"), "my_attribute")
 #> NULL
-y <- in_parallel$fun(u,v)
-#> C:/PROGRA~1/R/R-36~1.0/bin/RScript.exe "C:/R/00 packages/tags/in_a_new_session_script.R"
-#>   ~ 1.02 secs             ~ 2.03 secs             ~ 3.04 secs             ~ 4.04 secs             ~ 5.04 secs             ~ 6.07 secs
-y
-#>   speed dist
-#> 1     4    2
-#> 2     4   10
-#> 3     7    4
+attr(preserving_attr$paste0(x, "!"), "my_attribute")
+#> [1] "bar"
 ```
 
-`using` tag to evaluate call in a given environment
----------------------------------------------------
+`checking_args` to operate checks on arguments before calling the function
 
 ``` r
-using(iris)$ave(Sepal.Length,Species, FUN = mean)
-#>   [1] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
-#>  [12] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
-#>  [23] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
-#>  [34] 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006 5.006
-#>  [45] 5.006 5.006 5.006 5.006 5.006 5.006 5.936 5.936 5.936 5.936 5.936
-#>  [56] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
-#>  [67] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
-#>  [78] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
-#>  [89] 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936 5.936
-#> [100] 5.936 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
-#> [111] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
-#> [122] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
-#> [133] 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588 6.588
-#> [144] 6.588 6.588 6.588 6.588 6.588 6.588 6.588
-vec <- c(1:2,a=2.5,3:4)
-using(vec)[.>=a] # rather than ; vec[vec >= vec["a"]]
-#>   a         
-#> 2.5 3.0 4.0
-using(vec)[[.>=a]] # rather than ; vec >= vec["a"]
-#>                 a             
-#> FALSE FALSE  TRUE  TRUE  TRUE
+mean(1:5, na.rm = 1) # 1 is coerced to TRUE
+#> [1] 3
+checking_args(is.logical(na.rm))$mean(1:5, na.rm = 1)
+#> Error in checking_args(is.logical(na.rm))$mean(1:5, na.rm = 1): is.logical(na.rm) is not TRUE
+checking_args(is.logical(na.rm),"na.rm should be logical!")$mean(1:5, na.rm = 1)
+#> Error in checking_args(is.logical(na.rm), "na.rm should be logical!")$mean(1:5, : na.rm should be logical!
 ```
