@@ -38,8 +38,8 @@ beeping <- tag(args = alist(.sound=1, .expr = NULL), {
 popping_up <- tag(args = alist(.message = NULL, .caption =""), {
   if(!requireNamespace("tcltk")) stop("Install the tcltk package to use the tag 'popping_up'")
   on.exit({
-  if(is.null(.message)) .message = paste("Done:", rlang::expr_text(sys.call()))
-  tcltk::tk_messageBox("ok",.message, .caption)
+    if(is.null(.message)) .message = paste("Done:", rlang::expr_text(sys.call()))
+    tcltk::tk_messageBox("ok",.message, .caption)
   })
   CALL()
 })
