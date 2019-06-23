@@ -35,7 +35,6 @@ setting_options(list(scipen = 100))$print(exp(100))
 Installation and setup :
 
 ```{r}
-# devtools::install_github("moodymudskipper/tag")
 # devtools::install_github("moodymudskipper/tags")
 library(tags)
 suppressPackageStartupMessages(library(tidyverse,warn.conflicts = FALSE))
