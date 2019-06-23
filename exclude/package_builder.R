@@ -21,6 +21,8 @@ usethis::use_news_md()
 
 
 shell("git remote add origin https://github.com/moodymudskipper/tags.git",intern = TRUE)
-shell("git push -u origin master",intern = TRUE)
+shell("git push -u origin master -f",intern = TRUE)
 
 devtools::install_github("moodymudskipper/tags")
+
+
