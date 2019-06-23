@@ -51,7 +51,8 @@ tracing <- tag(args= alist(.tracer=NULL, .exit=NULL, .at=1, .edit = FALSE),{
 wrapping <- tag(
   args= alist(.before=NULL, .after=NULL, .around = identity),
   eval_args = FALSE,{
-    t_args <- T_ARGS(eval = FALSE)
+    t_args <- c(T_ARGS(eval = FALSE), T_FORMALS())
+    t_args <- t_args[unique(names(t_args))]
     eval(t_args[[".before"]])
     . <- eval(expr(rlang::as_function(!!t_args[[".around"]])(!!CALL(eval = FALSE))))
     eval(t_args[[".after"]])
