@@ -27,3 +27,4 @@ Suggests:
     testthat,
     beepr,
     withr
+Remotes: github::moodymudskipper/tag
