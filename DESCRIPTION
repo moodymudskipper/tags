@@ -1,6 +1,6 @@
 Package: tags
 Title: A collection of tags built using the package 'tag'
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
 Description: A collection of tags built using the package 'tag'.
     Tags are essentially adverb factories, they build adverbs (also called function operators) from a set of parameters.

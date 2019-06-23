@@ -1,3 +1,7 @@
+# tags (development version)
+
+* corrected definition of wrapping so it works with default arguments
+
 # tags 0.1.0
 
 * Added a `NEWS.md` file to track changes to the package.
