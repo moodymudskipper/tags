@@ -1,4 +1,5 @@
 usethis::use_directory("exclude", ignore = TRUE)
+usethis::use_git_ignore("exclude/package_builder.R")
 usethis::use_git_ignore("exclude")
 usethis::use_build_ignore("exclude")
 usethis::use_package("utils")
