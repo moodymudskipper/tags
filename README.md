@@ -49,9 +49,10 @@ The package contains over 50 tags that can be divided into the following categor
     -   `using_rowwise` to use `dplyr::rowwise` on a single operation
     -   `selecting_dots`, `renaming_dots`, `mutating_dots`, `transmuting_dots`, `reversing_dots` to edit the dots passed to a call before it's executed, using `dplyr` semantics.
 -   tags focused on side effects
+    -   `logging` to print call and execution time (wraps `Sys.time()`)
+    -   `suppressing_warnings` to selectively suppress warnings based on a regular expression.
     -   `viewing` (wraps `utils::View`)
     -   `debugging` (wraps `base::debugonce`)
-    -   `logging` to print call and execution time (wraps `Sys.time()`)
     -   `progressing` to add a progress bar to any functional (wraps `progress::progress_bar`)
     -   `beeping` to play a sound once the call is over (wraps `beepr::beep`)
     -   `popping_up` to trigger a message box once the call is over (wraps `tcltk::tk_messageBox`)
@@ -63,7 +64,6 @@ The package contains over 50 tags that can be divided into the following categor
     -   `tracing` as a tag counterpart to `base::trace`
     -   `enclosing` to enclose the input function in another function.
     -   `preserving_attr` to make sure some attributes are preserved
-    -   `suppressing_warnings` to selectively suppress warnings based on a regular expression.
     -   `checking_args` to operate checks on arguments before calling the function
 
 ### tag counterparts to `base` and `purrr` adverbs :
@@ -138,7 +138,7 @@ setting_package("lattice")$fun(x = -2:2, y = dnorm(-2:2))
 ``` r
 c(setting_seed(1)$sample(1e4,1), sample(1e4,1), 
   setting_seed(1)$sample(1e4,1), sample(1e4,1))
-#> [1] 1017 7275 1017 9309
+#> [1] 1017 1489 1017 2886
 ```
 
 See also `setting_bmp`, `setting_cairo_pdf`, `setting_cairo_ps`, `setting_collate`, `setting_connection`, `setting_db_connection`, `setting_dir`, `setting_environment`, `setting_envvar`, `setting_file`, `setting_jpeg`, `setting_libpaths`, `setting_locale`, `setting_makevars`, `setting_message_sink`, `setting_namespace`, `setting_output_sink`, `setting_par`, `setting_path`, `setting_pdf`, `setting_png`, `setting_postscript`, `setting_preserve_seed`, `setting_svg`, `setting_temp_libpaths`, `setting_tempfile`, `setting_tiff`, `setting_xfig`
@@ -231,7 +231,7 @@ reversing_dots$paste("a","b")
 ``` r
 x <- logging$Sys.sleep(2)
 #> logging$Sys.sleep(2)
-#>   ~ 2.04 sec
+#>   ~ 2.03 sec
 #> NULL
 x <- logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)
 #> logging(.time = FALSE, .print = FALSE)$Sys.sleep(2)
