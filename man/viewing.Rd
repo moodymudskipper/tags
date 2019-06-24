@@ -12,3 +12,8 @@ viewing(.title = "View")
 \description{
 viewing tag to view the output of a call
 }
+\examples{
+\dontrun{
+viewing$head(iris)
+}
+}

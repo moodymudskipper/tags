@@ -48,6 +48,7 @@ debugging <- tag({
 #' viewing tag to view the output of a call
 #' @param .title itle for viewer window. Defaults to `"View"`
 #' @export
+#' @examples
 #' \dontrun{
 #' viewing$head(iris)
 #' }
